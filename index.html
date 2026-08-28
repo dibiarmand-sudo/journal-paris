@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Journal de Paris — Carnet de Discipline</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#14181f">
+
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Journal Paris">
+<meta name="mobile-web-app-capable" content="yes">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #14181f;
+    --surface: #1c2230;
+    --surface-raised: #232a3a;
+    --border: #2e3648;
+    --text: #e8e6df;
+    --text-muted: #8b93a3;
+    --warn: #b8874a;
+    --warn-bg: rgba(184, 135, 74, 0.12);
+    --good: #6b9080;
+    --good-bg: rgba(107, 144, 128, 0.12);
+    --info: #5b7c99;
+    --error: #b85a5a;
+    --error-bg: rgba(184, 90, 90, 0.12);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    line-height: 1.5;
+    padding: 0 0 60px 0;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 28px 18px; }
+  header { margin-bottom: 28px; }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 8px 0; }
+  .sub { color: var(--text-muted); font-size: 14px; max-width: 56ch; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 18px;
+  }
+  .card h2 {
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 16px 0;
+    font-weight: 500;
+  }
+
+  label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; margin-top: 14px; }
+  label:first-of-type { margin-top: 0; }
+  input, select, textarea {
+    width: 100%;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--info);
+  }
+  select.placeholder-selected { color: var(--text-muted); }
+  select.field-invalid { border-color: var(--error); }
+  textarea { resize: vertical; min-height: 50px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .field-error {
+    font-size: 12px;
+    color: var(--error);
+    margin-top: 4px;
+    display: none;
+  }
+  .field-error.show { display: block; }
+
+  .flag {
+    margin-top: 14px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    background: var(--warn-bg);
+    border: 1px solid var(--warn);
+    color: var(--warn);
+    font-size: 13px;
+    display: none;
+  }
+  .flag.show { display: block; }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .btn-primary {
+    width: 100%;
+    margin-top: 18px;
+    background: var(--info);
+    color: #fff;
+    padding: 12px;
+  }
+  .btn-primary:active { opacity: 0.85; }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .entry {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .entry-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .entry-match { font-weight: 600; font-size: 14px; }
+  .entry-meta { color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; font-size: 11px; margin-top: 2px; }
+  .tag {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--surface-raised);
+    color: var(--text-muted);
+    margin-right: 5px;
+    margin-top: 4px;
+  }
+  .tag.warn { background: var(--warn-bg); color: var(--warn); }
+  .close-fields { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+  .close-fields input { width: 90px; padding: 6px 8px; font-size: 13px; }
+  .close-fields select { width: auto; padding: 6px 8px; font-size: 13px; }
+  .clv-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+  }
+  .clv-pos { background: var(--good-bg); color: var(--good); }
+  .clv-neg { background: var(--warn-bg); color: var(--warn); }
+
+  .empty { color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px 0; }
+
+  .stat-group { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 14px; }
+  .stat-group:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+  .stat-name { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .stat-bar-track {
+    height: 6px;
+    background: var(--surface-raised);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 8px 0;
+  }
+  .stat-bar-fill { height: 100%; background: var(--info); border-radius: 3px; }
+  .stat-bar-fill.ready { background: var(--good); }
+  .stat-row { display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-muted); }
+  .verdict {
+    margin-top: 8px;
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: 6px;
+  }
+  .verdict.sig-pos { background: var(--good-bg); color: var(--good); }
+  .verdict.sig-neg { background: var(--warn-bg); color: var(--warn); }
+  .verdict.wait { background: var(--surface-raised); color: var(--text-muted); }
+
+  .footer-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 24px;
+    padding: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .install-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 10px;
+    display: none;
+  }
+  .install-note.show { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Carnet de discipline · pas un pronostiqueur</div>
+    <h1>Journal de Paris</h1>
+    <div class="sub">Chaque pari est noté avant le résultat. On mesure si le marché finit par te donner raison (CLV) — pas si le match tombe bien. Aucune conclusion avant 50 paris dans une catégorie.</div>
+  </header>
+
+  <div class="card">
+    <h2>Nouveau pari</h2>
+    <label>Date</label>
+    <input type="date" id="f-date">
+
+    <label>Match</label>
+    <input type="text" id="f-match" placeholder="ex. PSG - Marseille">
+
+    <div class="row2">
+      <div>
+        <label>Type de pari</label>
+        <select id="f-type" class="placeholder-selected">
+          <option value="" disabled selected>— Choisir —</option>
+          <option value="simple-favori">Simple — Favori</option>
+          <option value="simple-outsider">Simple — Nul / Outsider</option>
+          <option value="simple-buts">Simple — Over/Under buts</option>
+          <option value="simple-btts">Simple — Les deux marquent</option>
+          <option value="combo">Combiné (2-3 sélections)</option>
+          <option value="prop-joueur">Pari joueur (tirs, buteur...)</option>
+          <option value="direct">Pari en direct</option>
+        </select>
+        <div class="field-error" id="err-type">Choisis un type de pari.</div>
+      </div>
+      <div>
+        <label>Cote prise</label>
+        <input type="number" step="0.01" id="f-cote" placeholder="2.50">
+      </div>
+    </div>
+
+    <div id="flag-structure" class="flag">⚠ Structure à désavantage mathématique connu (voir notre diagnostic) — pas interdit, juste rendu visible.</div>
+
+    <label>Raisonnement principal</label>
+    <select id="f-raison-cat" class="placeholder-selected">
+      <option value="" disabled selected>— Choisir —</option>
+      <option value="confrontations">Confrontations passées / stats buts</option>
+      <option value="forme-equipe">Forme récente de l'équipe</option>
+      <option value="forme-joueur">Forme d'un joueur en particulier</option>
+      <option value="cote-favori">Cote du favori (valeur perçue)</option>
+      <option value="actualite">Actualité (blessure, enjeu, composition)</option>
+      <option value="ressenti">Autre / ressenti</option>
+    </select>
+    <div class="field-error" id="err-raison">Choisis un raisonnement principal.</div>
+
+    <label>Note (1-2 lignes, optionnel)</label>
+    <textarea id="f-raison-note" placeholder="Pourquoi ce pari, précisément ?"></textarea>
+
+    <button class="btn-primary" onclick="addBet()">Enregistrer le pari</button>
+  </div>
+
+  <div class="card">
+    <h2>Paris enregistrés</h2>
+    <div id="entries-list"></div>
+  </div>
+
+  <div class="card">
+    <h2>Ce que tes données montrent</h2>
+    <div id="stats-panel"></div>
+  </div>
+
+  <div class="footer-note">
+    Ce suivi ne sert jamais à augmenter tes mises ni à assouplir les alertes structurelles — seulement à te montrer, une fois assez de données, où ton jugement est réellement fiable.
+  </div>
+  <div class="install-note" id="offline-note">Mode hors connexion actif — tes paris restent enregistrés sur cet appareil.</div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'paris_journal_v1';
+let bets = [];
+
+const RAISON_LABELS = {
+  'confrontations': 'Confrontations passées',
+  'forme-equipe': 'Forme équipe',
+  'forme-joueur': 'Forme joueur',
+  'cote-favori': 'Cote favori',
+  'actualite': 'Actualité',
+  'ressenti': 'Ressenti / autre'
+};
+const TYPE_LABELS = {
+  'simple-favori': 'Simple · Favori',
+  'simple-outsider': 'Simple · Outsider',
+  'simple-buts': 'Simple · O/U buts',
+  'simple-btts': 'Simple · BTTS',
+  'combo': 'Combiné',
+  'prop-joueur': 'Pari joueur',
+  'direct': 'Direct'
+};
+const RISKY_TYPES = ['combo', 'prop-joueur', 'direct'];
+
+function isRisky(type, cote) {
+  return RISKY_TYPES.includes(type) || (cote && parseFloat(cote) >= 4.0);
+}
+
+const typeSelect = document.getElementById('f-type');
+const raisonSelect = document.getElementById('f-raison-cat');
+
+function togglePlaceholderStyle(select) {
+  select.classList.toggle('placeholder-selected', select.value === '');
+}
+
+typeSelect.addEventListener('change', () => {
+  togglePlaceholderStyle(typeSelect);
+  updateFlag();
+  clearFieldError(typeSelect, 'err-type');
+});
+raisonSelect.addEventListener('change', () => {
+  togglePlaceholderStyle(raisonSelect);
+  clearFieldError(raisonSelect, 'err-raison');
+});
+document.getElementById('f-cote').addEventListener('input', updateFlag);
+
+function clearFieldError(select, errId) {
+  if (select.value !== '') {
+    select.classList.remove('field-invalid');
+    document.getElementById(errId).classList.remove('show');
+  }
+}
+
+function updateFlag() {
+  const type = typeSelect.value;
+  const cote = document.getElementById('f-cote').value;
+  const flag = document.getElementById('flag-structure');
+  if (isRisky(type, cote)) {
+    flag.classList.add('show');
+  } else {
+    flag.classList.remove('show');
+  }
+}
+
+function loadBets() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    bets = raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    bets = [];
+  }
+  render();
+}
+
+function saveBets() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(bets));
+  } catch (e) {
+    console.error('Erreur de sauvegarde', e);
+  }
+}
+
+function addBet() {
+  const date = document.getElementById('f-date').value;
+  const match = document.getElementById('f-match').value.trim();
+  const type = typeSelect.value;
+  const cote = parseFloat(document.getElementById('f-cote').value);
+  const raisonCat = raisonSelect.value;
+  const raisonNote = document.getElementById('f-raison-note').value.trim();
+
+  let valid = true;
+  if (!type) {
+    typeSelect.classList.add('field-invalid');
+    document.getElementById('err-type').classList.add('show');
+    valid = false;
+  }
+  if (!raisonCat) {
+    raisonSelect.classList.add('field-invalid');
+    document.getElementById('err-raison').classList.add('show');
+    valid = false;
+  }
+  if (!valid) return;
+
+  if (!date || !match || !cote) {
+    alert('Renseigne au moins la date, le match et la cote.');
+    return;
+  }
+
+  bets.unshift({
+    id: Date.now(),
+    date, match, type, cote,
+    raisonCat, raisonNote,
+    coteCloture: null,
+    resultat: null
+  });
+
+  saveBets();
+  document.getElementById('f-match').value = '';
+  document.getElementById('f-cote').value = '';
+  document.getElementById('f-raison-note').value = '';
+  document.getElementById('flag-structure').classList.remove('show');
+
+  typeSelect.selectedIndex = 0;
+  raisonSelect.selectedIndex = 0;
+  togglePlaceholderStyle(typeSelect);
+  togglePlaceholderStyle(raisonSelect);
+
+  render();
+}
+
+function updateClosing(id, value) {
+  const bet = bets.find(b => b.id === id);
+  if (bet) {
+    bet.coteCloture = value ? parseFloat(value) : null;
+    saveBets();
+    render();
+  }
+}
+
+function updateResult(id, value) {
+  const bet = bets.find(b => b.id === id);
+  if (bet) {
+    bet.resultat = value || null;
+    saveBets();
+    render();
+  }
+}
+
+function deleteBet(id) {
+  bets = bets.filter(b => b.id !== id);
+  saveBets();
+  render();
+}
+
+function computeCLV(bet) {
+  if (!bet.coteCloture || !bet.cote) return null;
+  return ((bet.cote / bet.coteCloture) - 1) * 100;
+}
+
+function erf(x) {
+  const sign = x >= 0 ? 1 : -1;
+  x = Math.abs(x);
+  const a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
+  const t = 1/(1+p*x);
+  const y = 1 - (((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function normalCDF(z) { return 0.5*(1+erf(z/Math.sqrt(2))); }
+
+function statsFor(group) {
+  const vals = group.map(computeCLV).filter(v => v !== null);
+  const n = vals.length;
+  if (n === 0) return { n: 0 };
+  const mean = vals.reduce((a,b)=>a+b,0) / n;
+  if (n < 2) return { n, mean };
+  const variance = vals.reduce((a,b)=>a+(b-mean)*(b-mean),0) / (n-1);
+  const sd = Math.sqrt(variance);
+  const se = sd / Math.sqrt(n);
+  const z = se > 0 ? mean / se : 0;
+  const p = 2 * (1 - normalCDF(Math.abs(z)));
+  return { n, mean, sd, z, p };
+}
+
+function renderStatGroup(name, group) {
+  const s = statsFor(group);
+  const threshold = 50;
+  const pct = Math.min(100, (s.n / threshold) * 100);
+  const ready = s.n >= threshold;
+
+  let verdictHtml = '';
+  if (!ready) {
+    verdictHtml = `<div class="verdict wait">${s.n}/${threshold} paris — pas encore assez de données pour conclure quoi que ce soit.</div>`;
+  } else {
+    const sig = s.p < 0.05;
+    const positive = s.mean > 0;
+    if (sig && positive) {
+      verdictHtml = `<div class="verdict sig-pos">CLV moyenne +${s.mean.toFixed(2)}% — statistiquement significative (p=${s.p.toFixed(3)}). Un vrai signal, mesuré.</div>`;
+    } else if (sig && !positive) {
+      verdictHtml = `<div class="verdict sig-neg">CLV moyenne ${s.mean.toFixed(2)}% — significativement négative (p=${s.p.toFixed(3)}). Cette catégorie te coûte réellement.</div>`;
+    } else {
+      verdictHtml = `<div class="verdict wait">CLV moyenne ${s.mean>0?'+':''}${s.mean.toFixed(2)}%, mais pas significatif (p=${s.p.toFixed(3)}) — indiscernable du hasard pour l'instant.</div>`;
+    }
+  }
+
+  return `
+    <div class="stat-group">
+      <div class="stat-name">${name}</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill ${ready?'ready':''}" style="width:${pct}%"></div></div>
+      <div class="stat-row"><span>${s.n} pari${s.n!==1?'s':''} avec cote de clôture</span><span>${s.mean!==undefined ? (s.mean>0?'+':'')+s.mean.toFixed(2)+'% CLV moy.' : ''}</span></div>
+      ${verdictHtml}
+    </div>
+  `;
+}
+
+function render() {
+  const list = document.getElementById('entries-list');
+  if (bets.length === 0) {
+    list.innerHTML = '<div class="empty">Aucun pari enregistré pour l\'instant.</div>';
+  } else {
+    list.innerHTML = bets.map(bet => {
+      const clv = computeCLV(bet);
+      const risky = isRisky(bet.type, bet.cote);
+      return `
+        <div class="entry">
+          <div class="entry-top">
+            <div>
+              <div class="entry-match">${bet.match}</div>
+              <div class="entry-meta">${bet.date} · cote ${bet.cote}</div>
+            </div>
+            ${clv !== null ? `<span class="clv-badge ${clv>=0?'clv-pos':'clv-neg'}">${clv>=0?'+':''}${clv.toFixed(1)}% CLV</span>` : ''}
+          </div>
+          <div>
+            <span class="tag ${risky?'warn':''}">${TYPE_LABELS[bet.type]||bet.type}</span>
+            <span class="tag">${RAISON_LABELS[bet.raisonCat]||bet.raisonCat}</span>
+          </div>
+          ${bet.raisonNote ? `<div style="margin-top:6px;color:var(--text-muted);font-size:12px;">${bet.raisonNote}</div>` : ''}
+          <div class="close-fields">
+            <input type="number" step="0.01" placeholder="Cote clôture" value="${bet.coteCloture ?? ''}" onchange="updateClosing(${bet.id}, this.value)">
+            <select onchange="updateResult(${bet.id}, this.value)">
+              <option value="">Résultat ?</option>
+              <option value="gagne" ${bet.resultat==='gagne'?'selected':''}>Gagné</option>
+              <option value="perdu" ${bet.resultat==='perdu'?'selected':''}>Perdu</option>
+            </select>
+            <button class="btn-ghost" onclick="deleteBet(${bet.id})">Suppr.</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  const panel = document.getElementById('stats-panel');
+  if (bets.length === 0) {
+    panel.innerHTML = '<div class="empty">Enregistre des paris pour voir apparaître tes statistiques par catégorie.</div>';
+  } else {
+    const byRaison = {};
+    const byType = {};
+    bets.forEach(b => {
+      (byRaison[b.raisonCat] = byRaison[b.raisonCat]||[]).push(b);
+      (byType[b.type] = byType[b.type]||[]).push(b);
+    });
+    let html = '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Par type de raisonnement</div>';
+    html += Object.keys(byRaison).map(k => renderStatGroup(RAISON_LABELS[k]||k, byRaison[k])).join('');
+    html += '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin:18px 0 10px;">Par structure de pari</div>';
+    html += Object.keys(byType).map(k => renderStatGroup(TYPE_LABELS[k]||k, byType[k])).join('');
+    panel.innerHTML = html;
+  }
+}
+
+document.getElementById('f-date').valueAsDate = new Date();
+loadBets();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+window.addEventListener('offline', () => document.getElementById('offline-note').classList.add('show'));
+window.addEventListener('online', () => document.getElementById('offline-note').classList.remove('show'));
+if (!navigator.onLine) document.getElementById('offline-note').classList.add('show');
+</script>
+</body>
+</html>

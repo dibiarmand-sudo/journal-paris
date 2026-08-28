@@ -1,0 +1,19 @@
+{
+  "name": "Journal de Paris — Carnet de Discipline",
+  "short_name": "Journal Paris",
+  "description": "Carnet de discipline pour le suivi de paris sportifs — mesure la CLV, pas le résultat brut.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14181f",
+  "theme_color": "#14181f",
+  "lang": "fr",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

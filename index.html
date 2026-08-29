@@ -367,11 +367,7 @@ selectionInput.addEventListener('input', () => {
 });
 document.getElementById('f-cote').addEventListener('input', updateFlag);
 document.getElementById('btn-oddsportal').addEventListener('click', () => {
-  const match = document.getElementById('f-match').value.trim();
-  const url = match
-    ? 'https://www.oddsportal.com/search/results/?q=' + encodeURIComponent(match)
-    : 'https://www.oddsportal.com/';
-  window.open(url, '_blank', 'noopener');
+  window.open('https://www.oddsportal.com/', '_blank', 'noopener');
 });
 
 function clearFieldError(el, errId) {

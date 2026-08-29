@@ -89,9 +89,10 @@
     border-color: var(--info);
   }
   select.placeholder-selected { color: var(--text-muted); }
-  select.field-invalid { border-color: var(--error); }
+  select.field-invalid, input.field-invalid { border-color: var(--error); }
   textarea { resize: vertical; min-height: 50px; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field-note { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
 
   .field-error {
     font-size: 12px;
@@ -146,6 +147,7 @@
   }
   .entry-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
   .entry-match { font-weight: 600; font-size: 14px; }
+  .entry-selection { font-size: 12px; color: var(--text); margin-top: 2px; font-style: italic; }
   .entry-meta { color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; font-size: 11px; margin-top: 2px; }
   .tag {
     display: inline-block;
@@ -159,7 +161,8 @@
     margin-top: 4px;
   }
   .tag.warn { background: var(--warn-bg); color: var(--warn); }
-  .close-fields { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+  .closing-label { font-size: 11px; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-top: 12px; }
+  .close-fields { display: flex; gap: 8px; margin-top: 6px; align-items: center; }
   .close-fields input { width: 90px; padding: 6px 8px; font-size: 13px; }
   .close-fields select { width: auto; padding: 6px 8px; font-size: 13px; }
   .clv-badge {
@@ -233,6 +236,10 @@
     <label>Match</label>
     <input type="text" id="f-match" placeholder="ex. PSG - Marseille">
 
+    <label>Sélection exacte</label>
+    <input type="text" id="f-selection" placeholder="ex. Villarreal gagne, Over 1,5 buts, BTTS Oui">
+    <div class="field-error" id="err-selection">Précise exactement ce qui est parié.</div>
+
     <div class="row2">
       <div>
         <label>Type de pari</label>
@@ -245,6 +252,10 @@
           <option value="combo">Combiné (2-3 sélections)</option>
           <option value="prop-joueur">Pari joueur (tirs, buteur...)</option>
           <option value="direct">Pari en direct</option>
+          <option value="handicap-asiatique">Handicap asiatique</option>
+          <option value="double-chance">Double chance</option>
+          <option value="score-exact">Score exact</option>
+          <option value="corners-cartons">Corners / Cartons</option>
         </select>
         <div class="field-error" id="err-type">Choisis un type de pari.</div>
       </div>
@@ -264,6 +275,8 @@
       <option value="forme-joueur">Forme d'un joueur en particulier</option>
       <option value="cote-favori">Cote du favori (valeur perçue)</option>
       <option value="actualite">Actualité (blessure, enjeu, composition)</option>
+      <option value="tendance-stat">Tendance statistique (championnat/ligue)</option>
+      <option value="dynamique-direct">Dynamique du match en direct</option>
       <option value="ressenti">Autre / ressenti</option>
     </select>
     <div class="field-error" id="err-raison">Choisis un raisonnement principal.</div>
@@ -301,6 +314,8 @@ const RAISON_LABELS = {
   'forme-joueur': 'Forme joueur',
   'cote-favori': 'Cote favori',
   'actualite': 'Actualité',
+  'tendance-stat': 'Tendance statistique (championnat/ligue)',
+  'dynamique-direct': 'Dynamique du match en direct',
   'ressenti': 'Ressenti / autre'
 };
 const TYPE_LABELS = {
@@ -310,16 +325,23 @@ const TYPE_LABELS = {
   'simple-btts': 'Simple · BTTS',
   'combo': 'Combiné',
   'prop-joueur': 'Pari joueur',
-  'direct': 'Direct'
+  'direct': 'Direct',
+  'handicap-asiatique': 'Handicap asiatique',
+  'double-chance': 'Double chance',
+  'score-exact': 'Score exact',
+  'corners-cartons': 'Corners / Cartons'
 };
-const RISKY_TYPES = ['combo', 'prop-joueur', 'direct'];
+const RISKY_TYPES = ['combo', 'prop-joueur', 'direct', 'score-exact', 'corners-cartons'];
+const SHARP_TYPES = ['handicap-asiatique', 'double-chance'];
 
 function isRisky(type, cote) {
+  if (SHARP_TYPES.includes(type)) return false;
   return RISKY_TYPES.includes(type) || (cote && parseFloat(cote) >= 4.0);
 }
 
 const typeSelect = document.getElementById('f-type');
 const raisonSelect = document.getElementById('f-raison-cat');
+const selectionInput = document.getElementById('f-selection');
 
 function togglePlaceholderStyle(select) {
   select.classList.toggle('placeholder-selected', select.value === '');
@@ -334,11 +356,14 @@ raisonSelect.addEventListener('change', () => {
   togglePlaceholderStyle(raisonSelect);
   clearFieldError(raisonSelect, 'err-raison');
 });
+selectionInput.addEventListener('input', () => {
+  clearFieldError(selectionInput, 'err-selection');
+});
 document.getElementById('f-cote').addEventListener('input', updateFlag);
 
-function clearFieldError(select, errId) {
-  if (select.value !== '') {
-    select.classList.remove('field-invalid');
+function clearFieldError(el, errId) {
+  if (el.value.trim() !== '') {
+    el.classList.remove('field-invalid');
     document.getElementById(errId).classList.remove('show');
   }
 }
@@ -375,12 +400,18 @@ function saveBets() {
 function addBet() {
   const date = document.getElementById('f-date').value;
   const match = document.getElementById('f-match').value.trim();
+  const selection = selectionInput.value.trim();
   const type = typeSelect.value;
   const cote = parseFloat(document.getElementById('f-cote').value);
   const raisonCat = raisonSelect.value;
   const raisonNote = document.getElementById('f-raison-note').value.trim();
 
   let valid = true;
+  if (!selection) {
+    selectionInput.classList.add('field-invalid');
+    document.getElementById('err-selection').classList.add('show');
+    valid = false;
+  }
   if (!type) {
     typeSelect.classList.add('field-invalid');
     document.getElementById('err-type').classList.add('show');
@@ -400,7 +431,7 @@ function addBet() {
 
   bets.unshift({
     id: Date.now(),
-    date, match, type, cote,
+    date, match, selection, type, cote,
     raisonCat, raisonNote,
     coteCloture: null,
     resultat: null
@@ -408,6 +439,7 @@ function addBet() {
 
   saveBets();
   document.getElementById('f-match').value = '';
+  selectionInput.value = '';
   document.getElementById('f-cote').value = '';
   document.getElementById('f-raison-note').value = '';
   document.getElementById('flag-structure').classList.remove('show');
@@ -517,6 +549,7 @@ function render() {
           <div class="entry-top">
             <div>
               <div class="entry-match">${bet.match}</div>
+              <div class="entry-selection">${bet.selection || 'Non précisé'}</div>
               <div class="entry-meta">${bet.date} · cote ${bet.cote}</div>
             </div>
             ${clv !== null ? `<span class="clv-badge ${clv>=0?'clv-pos':'clv-neg'}">${clv>=0?'+':''}${clv.toFixed(1)}% CLV</span>` : ''}
@@ -526,8 +559,9 @@ function render() {
             <span class="tag">${RAISON_LABELS[bet.raisonCat]||bet.raisonCat}</span>
           </div>
           ${bet.raisonNote ? `<div style="margin-top:6px;color:var(--text-muted);font-size:12px;">${bet.raisonNote}</div>` : ''}
+          <div class="closing-label">Cote de clôture (Pinnacle)</div>
           <div class="close-fields">
-            <input type="number" step="0.01" placeholder="Cote clôture" value="${bet.coteCloture ?? ''}" onchange="updateClosing(${bet.id}, this.value)">
+            <input type="number" step="0.01" placeholder="ex. 2.10" value="${bet.coteCloture ?? ''}" onchange="updateClosing(${bet.id}, this.value)">
             <select onchange="updateResult(${bet.id}, this.value)">
               <option value="">Résultat ?</option>
               <option value="gagne" ${bet.resultat==='gagne'?'selected':''}>Gagné</option>
@@ -535,6 +569,7 @@ function render() {
             </select>
             <button class="btn-ghost" onclick="deleteBet(${bet.id})">Suppr.</button>
           </div>
+          <div class="field-note">À trouver sur Oddsportal.com, colonne Pinnacle, juste avant le coup d'envoi — pas la cote Betclic.</div>
         </div>
       `;
     }).join('');

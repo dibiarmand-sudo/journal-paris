@@ -93,6 +93,9 @@
   textarea { resize: vertical; min-height: 50px; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .field-note { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+  .match-row { display: flex; gap: 8px; align-items: center; }
+  .match-row input { flex: 1; }
+  .match-row .btn-ghost { white-space: nowrap; }
 
   .field-error {
     font-size: 12px;
@@ -234,7 +237,10 @@
     <input type="date" id="f-date">
 
     <label>Match</label>
-    <input type="text" id="f-match" placeholder="ex. PSG - Marseille">
+    <div class="match-row">
+      <input type="text" id="f-match" placeholder="ex. PSG - Marseille">
+      <button type="button" class="btn-ghost" id="btn-oddsportal">Chercher sur Oddsportal</button>
+    </div>
 
     <label>Sélection exacte</label>
     <input type="text" id="f-selection" placeholder="ex. Villarreal gagne, Over 1,5 buts, BTTS Oui">
@@ -360,6 +366,13 @@ selectionInput.addEventListener('input', () => {
   clearFieldError(selectionInput, 'err-selection');
 });
 document.getElementById('f-cote').addEventListener('input', updateFlag);
+document.getElementById('btn-oddsportal').addEventListener('click', () => {
+  const match = document.getElementById('f-match').value.trim();
+  const url = match
+    ? 'https://www.oddsportal.com/search/results/?q=' + encodeURIComponent(match)
+    : 'https://www.oddsportal.com/';
+  window.open(url, '_blank', 'noopener');
+});
 
 function clearFieldError(el, errId) {
   if (el.value.trim() !== '') {

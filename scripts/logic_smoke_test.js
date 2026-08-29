@@ -52,13 +52,14 @@ const elements = {
   'entries-list': el(),
   'stats-panel': el(),
   'offline-note': el(),
+  'btn-oddsportal': el(),
 };
 
 global.document = {
   getElementById: (id) => elements[id],
   addEventListener() {},
 };
-global.window = { addEventListener() {} };
+global.window = { addEventListener() {}, open() {} };
 global.navigator = { onLine: true };
 global.alert = (msg) => { global.__lastAlert = msg; };
 
@@ -114,6 +115,17 @@ check('prop-joueur is risky', isRisky('prop-joueur', '1.5'), true);
 check('direct is risky', isRisky('direct', '1.5'), true);
 check('neutral type risky above cote 4', isRisky('simple-favori', '4.0'), true);
 check('neutral type not risky below cote 4', isRisky('simple-favori', '2.0'), false);
+
+// Test 6: Oddsportal search button builds a URL from the match text, no network call
+let __openedUrl = null;
+window.open = (u) => { __openedUrl = u; };
+elements['f-match'].value = 'PSG - Marseille';
+elements['btn-oddsportal'].dispatch('click');
+check('oddsportal search url built from match text', __openedUrl, 'https://www.oddsportal.com/search/results/?q=' + encodeURIComponent('PSG - Marseille'));
+
+elements['f-match'].value = '';
+elements['btn-oddsportal'].dispatch('click');
+check('oddsportal fallback url when match empty', __openedUrl, 'https://www.oddsportal.com/');
 `;
 
 eval(scriptSrc + '\n' + testSrc);

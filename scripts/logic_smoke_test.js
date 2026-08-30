@@ -53,6 +53,7 @@ const elements = {
   'stats-panel': el(),
   'offline-note': el(),
   'btn-oddsportal': el(),
+  'combo-match-note': el(),
 };
 
 global.document = {
@@ -122,6 +123,33 @@ window.open = (u) => { __openedUrl = u; };
 elements['f-match'].value = 'PSG - Marseille';
 elements['btn-oddsportal'].dispatch('click');
 check('oddsportal button opens homepage', __openedUrl, 'https://www.oddsportal.com/');
+
+// Test 7: renamed type labels reflect new wording, stored values untouched
+check('simple-buts label renamed', TYPE_LABELS['simple-buts'], 'Simple · Nombre de buts (Plus/Moins)');
+check('simple-btts label renamed', TYPE_LABELS['simple-btts'], 'Simple · Les deux marquent');
+
+// Test 8: selecting Combiné swaps the match placeholder and reveals the CLV-exclusion note
+elements['f-type'].value = 'combo';
+elements['f-type'].dispatch('change');
+check('combo match placeholder set', elements['f-match'].placeholder, 'Liste chaque match et sélection, ex: PSG-Rennes: PSG gagne / Real-Betis: Real gagne');
+check('combo note shown', elements['combo-match-note']._classes.has('show'), true);
+
+elements['f-type'].value = 'simple-favori';
+elements['f-type'].dispatch('change');
+check('non-combo match placeholder restored', elements['f-match'].placeholder, 'ex. PSG - Marseille');
+check('combo note hidden', elements['combo-match-note']._classes.has('show'), false);
+
+// Test 9: combo bets still save fine and don't require closing odds (same as any other type)
+elements['f-type'].value = 'combo';
+elements['f-type'].dispatch('change');
+elements['f-selection'].value = 'PSG gagne / Real gagne';
+elements['f-match'].value = 'PSG-Rennes: PSG gagne / Real-Betis: Real gagne';
+elements['f-cote'].value = '3.2';
+elements['f-raison-cat'].value = 'forme-equipe';
+addBet();
+check('combo bet saved', bets[0].type, 'combo');
+check('combo bet has no closing odds by default', bets[0].coteCloture, null);
+check('combo bet excluded from CLV until closing odds entered', computeCLV(bets[0]), null);
 `;
 
 eval(scriptSrc + '\n' + testSrc);

@@ -96,6 +96,9 @@
   .match-row { display: flex; gap: 8px; align-items: center; }
   .match-row input { flex: 1; }
   .match-row .btn-ghost { white-space: nowrap; }
+  #combo-match-note { display: none; }
+  #combo-match-note.show { display: block; }
+  .type-help { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
 
   .field-error {
     font-size: 12px;
@@ -241,6 +244,7 @@
       <input type="text" id="f-match" placeholder="ex. PSG - Marseille">
       <button type="button" class="btn-ghost" id="btn-oddsportal">Chercher sur Oddsportal</button>
     </div>
+    <div class="field-note" id="combo-match-note">Les combinés ne sont pas mesurés en CLV (trop complexe à décomposer) — seulement enregistrés pour garder une trace.</div>
 
     <label>Sélection exacte</label>
     <input type="text" id="f-selection" placeholder="ex. Villarreal gagne, Over 1,5 buts, BTTS Oui">
@@ -253,7 +257,7 @@
           <option value="" disabled selected>— Choisir —</option>
           <option value="simple-favori">Simple — Favori</option>
           <option value="simple-outsider">Simple — Nul / Outsider</option>
-          <option value="simple-buts">Simple — Over/Under buts</option>
+          <option value="simple-buts">Simple — Nombre de buts (Plus/Moins)</option>
           <option value="simple-btts">Simple — Les deux marquent</option>
           <option value="combo">Combiné (2-3 sélections)</option>
           <option value="prop-joueur">Pari joueur (tirs, buteur...)</option>
@@ -264,6 +268,7 @@
           <option value="corners-cartons">Corners / Cartons</option>
         </select>
         <div class="field-error" id="err-type">Choisis un type de pari.</div>
+        <div class="type-help">Handicap asiatique : avantage/désavantage donné à une équipe avant le match. Score exact : deviner le score final précis.</div>
       </div>
       <div>
         <label>Cote prise</label>
@@ -327,8 +332,8 @@ const RAISON_LABELS = {
 const TYPE_LABELS = {
   'simple-favori': 'Simple · Favori',
   'simple-outsider': 'Simple · Outsider',
-  'simple-buts': 'Simple · O/U buts',
-  'simple-btts': 'Simple · BTTS',
+  'simple-buts': 'Simple · Nombre de buts (Plus/Moins)',
+  'simple-btts': 'Simple · Les deux marquent',
   'combo': 'Combiné',
   'prop-joueur': 'Pari joueur',
   'direct': 'Direct',
@@ -348,14 +353,25 @@ function isRisky(type, cote) {
 const typeSelect = document.getElementById('f-type');
 const raisonSelect = document.getElementById('f-raison-cat');
 const selectionInput = document.getElementById('f-selection');
+const matchInput = document.getElementById('f-match');
+const comboMatchNote = document.getElementById('combo-match-note');
+const MATCH_PLACEHOLDER_DEFAULT = 'ex. PSG - Marseille';
+const MATCH_PLACEHOLDER_COMBO = 'Liste chaque match et sélection, ex: PSG-Rennes: PSG gagne / Real-Betis: Real gagne';
 
 function togglePlaceholderStyle(select) {
   select.classList.toggle('placeholder-selected', select.value === '');
 }
 
+function updateMatchFieldForType() {
+  const isCombo = typeSelect.value === 'combo';
+  matchInput.placeholder = isCombo ? MATCH_PLACEHOLDER_COMBO : MATCH_PLACEHOLDER_DEFAULT;
+  comboMatchNote.classList.toggle('show', isCombo);
+}
+
 typeSelect.addEventListener('change', () => {
   togglePlaceholderStyle(typeSelect);
   updateFlag();
+  updateMatchFieldForType();
   clearFieldError(typeSelect, 'err-type');
 });
 raisonSelect.addEventListener('change', () => {
@@ -457,6 +473,7 @@ function addBet() {
   raisonSelect.selectedIndex = 0;
   togglePlaceholderStyle(typeSelect);
   togglePlaceholderStyle(raisonSelect);
+  updateMatchFieldForType();
 
   render();
 }
@@ -568,7 +585,7 @@ function render() {
             <span class="tag">${RAISON_LABELS[bet.raisonCat]||bet.raisonCat}</span>
           </div>
           ${bet.raisonNote ? `<div style="margin-top:6px;color:var(--text-muted);font-size:12px;">${bet.raisonNote}</div>` : ''}
-          <div class="closing-label">Cote de clôture (Pinnacle)</div>
+          <div class="closing-label">Cote de clôture (Bet365)</div>
           <div class="close-fields">
             <input type="number" step="0.01" placeholder="ex. 2.10" value="${bet.coteCloture ?? ''}" onchange="updateClosing(${bet.id}, this.value)">
             <select onchange="updateResult(${bet.id}, this.value)">
@@ -578,7 +595,7 @@ function render() {
             </select>
             <button class="btn-ghost" onclick="deleteBet(${bet.id})">Suppr.</button>
           </div>
-          <div class="field-note">À trouver sur Oddsportal.com, colonne Pinnacle, juste avant le coup d'envoi — pas la cote Betclic.</div>
+          <div class="field-note">À trouver sur Oddsportal.com, ligne Bet365, juste avant le coup d'envoi.</div>
         </div>
       `;
     }).join('');
